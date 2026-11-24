@@ -1,0 +1,12 @@
+# Normalize line endings: LF in the repository and in the working copy.
+* text=auto eol=lf
+
+# Shell scripts and CI files must keep LF
+*.sh text eol=lf
+*.yml text eol=lf
+*.yaml text eol=lf
+
+# Binary
+*.png binary
+*.jpg binary
+*.pdf binary

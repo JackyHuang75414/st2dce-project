@@ -1,0 +1,39 @@
+# --- Node ---------------------------------------------------------------
+node_modules/
+npm-debug.log*
+coverage/
+
+# --- Secrets and environment -------------------------------------------
+# Never commit a credential: the project brief penalises secrets in the
+# repository AND in its history.
+.env
+.env.*
+!.env.example
+*.pem
+*.key
+*.p12
+
+# --- Terraform ----------------------------------------------------------
+**/.terraform/
+*.tfstate
+*.tfstate.*
+*.tfplan
+crash.log
+override.tf
+override.tf.json
+# Note: .terraform.lock.hcl MUST be committed (pinned provider versions).
+
+# --- Kubernetes / local tools -------------------------------------------
+kubeconfig
+*.kubeconfig
+kind-*.yaml
+metrics.txt
+
+# --- Editors and OS -----------------------------------------------------
+.DS_Store
+.idea/
+.vscode/
+Thumbs.db
+
+# --- Logs ---------------------------------------------------------------
+*.log
