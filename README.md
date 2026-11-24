@@ -13,23 +13,6 @@
 | R7 | Incident and postmortem (fault injection, timeline, 5 Whys, runbook, actions)                       | 3   | <br />              |
 | R8 | Documentation (README rebuilds the project from scratch)                                            | 1   | <br />              |
 
-## Architecture
-
-```mermaid
-flowchart LR
-    user[User] -->|HTTP| svc[Service app]
-    svc --> app1[app pod 1]
-    svc --> app2[app pod 2]
-    app1 --> db[(PostgreSQL)]
-    app2 --> db
-    prom[Prometheus] -->|scrape /metrics| svc
-    graf[Grafana] --> prom
-    loki[Loki] -->|JSON logs| app1
-    loki -->|JSON logs| app2
-```
-
-<br />
-
 ## Team
 
 | Member (GitHub)                                  | Role                                    |
