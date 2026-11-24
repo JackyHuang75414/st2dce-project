@@ -4,6 +4,7 @@ on:
   push:
     branches: [main]
   pull_request:
+  workflow_dispatch:   
 
 permissions:
   contents: read
@@ -100,3 +101,53 @@ jobs:
         with:
           push: true
           tags: ${{ env.IMAGE }}:${{ github.sha }}
+
+  deploy:
+    name: Deploy to kind
+    needs: [security, image]
+    if: github.ref == 'refs/heads/main' || github.event_name == 'workflow_dispatch'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Create a kind cluster
+        uses: helm/kind-action@v1
+        with:
+          cluster_name: st2dce
+
+      - name: Build the image with the reference the manifests expect
+        run: |
+          IMAGE=ghcr.io/${GITHUB_REPOSITORY,,}:${GITHUB_SHA}
+          echo "IMAGE=$IMAGE" >> "$GITHUB_ENV"
+          docker build -t "$IMAGE" .
+          kind load docker-image "$IMAGE" --name st2dce
+
+      - name: Point the overlay at this commit's image
+        run: |
+          curl -s "https://raw.githubusercontent.com/kubernetes-sigs/kustomize/master/hack/install_kustomize.sh" | bash
+          sudo mv kustomize /usr/local/bin/
+          cd k8s/overlays/dev
+          kustomize edit set image "ghcr.io/jackyhuang75414/st2dce-project=${IMAGE}"
+          cd -
+
+      - name: Deploy
+        run: |
+          kubectl create namespace dev --dry-run=client -o yaml | kubectl apply -f -
+          kubectl apply -k k8s/overlays/dev
+          kubectl rollout status deployment/app -n dev --timeout=180s
+
+      - name: Smoke test
+        run: |
+          kubectl port-forward -n dev svc/app 8080:80 &
+          for i in $(seq 1 10); do
+            if curl -fsS http://localhost:8080/health; then exit 0; fi
+            sleep 2
+          done
+          echo "smoke test failed"; exit 1
+          
+      - name: Diagnostics on failure
+        if: failure()
+        run: |
+          kubectl get pods -n dev -o wide || true
+          kubectl describe pods -n dev | tail -60 || true
+          kubectl logs -n dev deploy/app --tail=50 || true
