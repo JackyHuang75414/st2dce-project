@@ -19,7 +19,7 @@ WORKDIR /app
 
 COPY --from=deps /app/node_modules ./node_modules
 COPY app/package.json ./
-COPY app/app.js app/server.js ./
+COPY app/app.js app/server.js app/db.js ./
 
 # The runtime does not need npm/npx: they are only used at build time. Removing them
 # shrinks the image and drops tooling we do not run (npm bundles a copy of tar, which

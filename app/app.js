@@ -1,6 +1,7 @@
 import express from "express";
 import client from "prom-client";
 import { setTimeout as sleep } from "node:timers/promises";
+import { getPool, initSchema, ping } from "./db.js";
 
 // Default Node/process metrics (process_cpu_seconds_total, nodejs_heap_size_used_bytes, ...)
 client.collectDefaultMetrics();
@@ -22,6 +23,19 @@ const httpDuration = new client.Histogram({
 const app = express();
 
 app.disable("x-powered-by");
+app.use(express.json());
+
+let schemaPromise;
+
+async function ensureSchema() {
+  if (!schemaPromise) {
+    schemaPromise = initSchema().catch((error) => {
+      schemaPromise = undefined;
+      throw error;
+    });
+  }
+  return schemaPromise;
+}
 
 // 2. Instrumentation middleware: every request EXCEPT the scrape itself.
 app.use((req, res, next) => {
@@ -65,6 +79,44 @@ app.get("/", (req, res) => {
 
 app.get("/health", (req, res) => {
   res.status(200).type("text/plain").send("OK");
+});
+
+app.get("/ready", async (req, res) => {
+  try {
+    await ping();
+    res.status(200).json({ status: "ready" });
+  } catch {
+    res.status(503).json({ status: "not ready", reason: "database unreachable" });
+  }
+});
+
+app.get("/items", async (req, res) => {
+  try {
+    await ensureSchema();
+    const result = await getPool().query(
+      "SELECT id, name, created_at FROM items ORDER BY id",
+    );
+    res.status(200).json(result.rows);
+  } catch {
+    res.status(503).json({ error: "database unavailable" });
+  }
+});
+
+app.post("/items", async (req, res) => {
+  const name = req.body?.name;
+  if (typeof name !== "string" || name.trim() === "") {
+    return res.status(400).json({ error: "name is required" });
+  }
+  try {
+    await ensureSchema();
+    const result = await getPool().query(
+      "INSERT INTO items (name) VALUES ($1) RETURNING id, name, created_at",
+      [name.trim()],
+    );
+    res.status(201).json(result.rows[0]);
+  } catch {
+    res.status(503).json({ error: "database unavailable" });
+  }
 });
 
 // 5. Lab 4 / 1.2 - random delay up to 2 s
