@@ -1,0 +1,20 @@
+# Build context exclusions (keeps the image small and the cache honest)
+.git
+.github
+.gitignore
+git
+
+node_modules
+npm-debug.log*
+coverage
+
+docs
+k8s
+infra
+monitoring
+*.md
+
+app/test
+
+Dockerfile
+.dockerignore
