@@ -1,0 +1,26 @@
+# dependencies
+node_modules/
+npm-debug.log*
+
+# environment / secrets
+.env
+.env.*
+
+# logs
+*.log
+
+# terraform
+**/.terraform/
+*.tfstate
+*.tfstate.*
+*.tfplan
+# note: .terraform.lock.hcl must stay committed
+
+# kubernetes / local stuff
+kubeconfig
+metrics.txt
+
+# editor / os
+.DS_Store
+.vscode/
+.idea/
